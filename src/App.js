@@ -1,25 +1,57 @@
-import logo from './logo.svg';
-import './App.css';
+import {Container, Stack, CircularProgress} from '@mui/material'
+import {useEffect} from 'react'
+import {connect} from 'react-redux'
+import {Route, Routes, Navigate, withRouter, Outlet} from 'react-router-dom'
+import Appbar from './components/AppBar'
+import Post from './pages/Post'
+import {setUser} from './redux/actions/auth'
+import {fetchPosts} from './redux/actions/post'
+import {onAuthChanged, getCurrentUser, auth} from './services/firebase'
 
-function App() {
+import {onAuthStateChanged} from 'firebase/auth'
+
+function App(props) {
+  useEffect(() => {
+    props.fetchPosts()
+
+    onAuthStateChanged(auth, user => {
+      console.log(user)
+      if (user) {
+        props.setUser(user)
+      } else {
+        props.setUser(null)
+      }
+    })
+  }, [])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <>
+      {props.posts === null ? (
+        <Stack direction="row" justifyContent="center" sx={{p: 5}}>
+          <CircularProgress />
+        </Stack>
+      ) : (
+        <>
+          <Appbar />
+          <Outlet />
+        </>
+      )}
+    </>
+  )
 }
 
-export default App;
+function mapStateToProps(state) {
+  return {
+    posts: state.post.posts,
+    user: state.auth.user,
+  }
+}
+
+function mapDispatchToProps(dispatch) {
+  return {
+    fetchPosts: value => dispatch(fetchPosts(value)),
+    setUser: value => dispatch(setUser(value)),
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App)
