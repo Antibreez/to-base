@@ -11,11 +11,12 @@ import {onAuthChanged, getCurrentUser, auth} from './services/firebase'
 import {onAuthStateChanged} from 'firebase/auth'
 
 function App(props) {
+  console.log(process.env.NODE_ENV)
+
   useEffect(() => {
     props.fetchPosts()
 
     onAuthStateChanged(auth, user => {
-      console.log(user)
       if (user) {
         props.setUser(user)
       } else {
