@@ -49,6 +49,7 @@ root.render(
             <Route index element={<PostSerch />} />
             <Route path=":postId" element={<Post />} />
             <Route path="add" element={<AddPost />} />
+            <Route path="edit/:postId" element={<AddPost />} />
           </Route>
         </Routes>
       </BrowserRouter>

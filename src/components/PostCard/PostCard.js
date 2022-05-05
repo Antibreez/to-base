@@ -63,7 +63,7 @@ function PostCard(props) {
             style={{maxWidth: '100%', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
             gutterBottom
           >
-            {text}
+            {text.split('*').join('')}
           </Typography>
           <Typography
             variant="body1"

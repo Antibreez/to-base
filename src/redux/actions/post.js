@@ -1,5 +1,14 @@
-import {ADD_POST, FETCH_IMAGES, FETCH_POST, FETCH_POSTS, SET_FILTER} from './actionTypes'
-import {getPosts, getImages} from '../../services/firebase'
+import {
+  ADD_POST,
+  DELETE_POST,
+  FETCH_IMAGES,
+  FETCH_IMAGE_FILES,
+  FETCH_POST,
+  FETCH_POSTS,
+  REPLACE_POST,
+  SET_FILTER,
+} from './actionTypes'
+import {getPosts, getImages, getImageFiles} from '../../services/firebase'
 
 // export const fetchPost = id => async dispatch => {
 //   onVal(getPostssRef(), val => {
@@ -38,17 +47,46 @@ export const addPost = post => {
   }
 }
 
+export const replacePost = post => {
+  return {
+    type: REPLACE_POST,
+    payload: post,
+  }
+}
+
+export const deletePost = id => {
+  return {
+    type: DELETE_POST,
+    payload: id,
+  }
+}
+
 export const fetchImages = id => async dispatch => {
   getImages(id)
     .then(images => {
-      dispatch(setImages(images))
+      dispatch(setCurrentImages(images))
     })
-    .catch(e => setImages([]))
+    .catch(e => setCurrentImages([]))
 }
 
-export function setImages(value) {
+export const fetchImageFiles = id => async dispatch => {
+  getImageFiles(id)
+    .then(files => {
+      dispatch(setCurrentImageFiles(files))
+    })
+    .catch(e => setCurrentImageFiles([]))
+}
+
+export function setCurrentImages(value) {
   return {
     type: FETCH_IMAGES,
+    payload: value,
+  }
+}
+
+export function setCurrentImageFiles(value) {
+  return {
+    type: FETCH_IMAGE_FILES,
     payload: value,
   }
 }

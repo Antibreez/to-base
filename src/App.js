@@ -11,8 +11,6 @@ import {onAuthChanged, getCurrentUser, auth} from './services/firebase'
 import {onAuthStateChanged} from 'firebase/auth'
 
 function App(props) {
-  console.log(process.env.NODE_ENV)
-
   useEffect(() => {
     props.fetchPosts()
 

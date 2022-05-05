@@ -1,28 +1,62 @@
-import {Component, useEffect} from 'react'
-import {Typography, Container, Chip, Stack, CircularProgress, Button} from '@mui/material'
+import {Component, Fragment, useEffect, useState} from 'react'
+import {
+  Typography,
+  Container,
+  Chip,
+  Stack,
+  CircularProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogActions,
+} from '@mui/material'
 import {Box} from '@mui/system'
 import {connect, useDispatch} from 'react-redux'
-import {fetchPost, fetchImages} from '../../redux/actions/post'
+import {fetchPost, fetchImages, deletePost} from '../../redux/actions/post'
 import post from '../../redux/reducers/post'
 import {useParams, useNavigate, useSearchParams, useLocation, NavLink} from 'react-router-dom'
 import {Navigation, Pagination} from 'swiper'
 import {Swiper, SwiperSlide, SwiperPagination} from 'swiper/react'
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import {delelteImages, setPost} from '../../services/firebase'
 
 function getPost(posts, paramsId) {
   return posts.find(post => post.id === parseInt(paramsId, 10))
 }
 
 function Post(props) {
+  const [open, setOpen] = useState(false)
+  const [currentPost, setCurrentPost] = useState(null)
   let params = useParams()
   let [searchParams, setSearchParams] = useSearchParams()
   let navigate = useNavigate()
 
   const {posts, filter} = props
 
-  const currentPost = getPost(posts, params.postId)
+  const handleClickOpen = () => {
+    setOpen(true)
+  }
+
+  const handleClose = () => {
+    setOpen(false)
+  }
+
+  const handleDelete = () => {
+    const postId = parseInt(params.postId, 10)
+    const newPosts = props.posts.filter(post => {
+      return post.id !== postId
+    })
+
+    setPost(newPosts).then(() => {
+      props.deletePost(postId)
+      delelteImages(postId).then(navigate('/'))
+    })
+  }
 
   useEffect(() => {
+    setCurrentPost(getPost(posts, params.postId))
     props.fetchImages(parseInt(params.postId, 10))
   }, [])
 
@@ -47,12 +81,31 @@ function Post(props) {
     <>
       <Container maxWidth="lg" sx={{py: 3, mb: 4}}>
         <Stack direction="row" sx={{py: 1, px: 2}} style={{backgroundColor: '#efefef'}}>
-          <Button size="large" onClick={goBackHandler}>
+          <Button size="large" onClick={goBackHandler} sx={{mr: 'auto'}}>
             <KeyboardBackspaceIcon />
             <Typography variant="h6" sx={{px: 2}}>
-              Назад
+              к поиску
             </Typography>
           </Button>
+          {props.user ? (
+            <>
+              <Button aria-label="Редактировать" onClick={() => navigate(`/edit/${params.postId}`)}>
+                <EditIcon />
+              </Button>
+              <Button aria-label="Удалить" onClick={handleClickOpen}>
+                <DeleteIcon />
+              </Button>
+              <Dialog open={open} onClose={handleClose}>
+                <DialogTitle>Вы уверены, что хотите удалить пост?</DialogTitle>
+                <DialogActions style={{justifyContent: 'center'}}>
+                  <Button onClick={handleDelete} style={{color: '#aaa'}}>
+                    Да
+                  </Button>
+                  <Button onClick={handleClose}>Нет</Button>
+                </DialogActions>
+              </Dialog>
+            </>
+          ) : null}
         </Stack>
       </Container>
 
@@ -70,13 +123,14 @@ function Post(props) {
                     key={idx + 1}
                     style={{
                       height: 'auto',
+                      maxHeight: '100vh',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       paddingBottom: '50px',
                     }}
                   >
-                    <img src={image} />
+                    <img src={image} style={{maxWidth: '100%', maxHeight: '100%'}} />
                   </SwiperSlide>
                 )
               })}
@@ -86,19 +140,23 @@ function Post(props) {
       </Container>
 
       <Container maxWidth="md" style={{paddingTop: '30px', paddingBottom: '50px'}}>
-        <Typography style={{fontWeight: 500}} variant="h5" gutterBottom>
-          {currentPost.title}
+        <Typography style={{fontWeight: 500}} variant="h5" sx={{mb: 4}}>
+          {!!currentPost && currentPost.title}
         </Typography>
-        <Typography variant="body2" gutterBottom>
-          {currentPost.text}
+        <Typography variant="body2" gutterBottom sx={{mb: 3}} style={{whiteSpace: 'pre-line'}}>
+          {!!currentPost &&
+            currentPost.text.split('*').map((t, idx) => {
+              return <Fragment key={idx}>{idx % 2 !== 0 ? <b>{t}</b> : t}</Fragment>
+            })}
         </Typography>
         <Box sx={{backgroundColor: '#efefef', p: '20px'}}>
           <Stack direction="row" flexWrap="wrap">
-            {currentPost.tags.map((item, idx) => {
-              return (
-                <Chip key={idx + 1} label={item} variant="outlined" sx={{mb: 1, mr: 1}} onClick={onTagClick}></Chip>
-              )
-            })}
+            {!!currentPost &&
+              currentPost.tags.map((item, idx) => {
+                return (
+                  <Chip key={idx + 1} label={item} variant="outlined" sx={{mb: 1, mr: 1}} onClick={onTagClick}></Chip>
+                )
+              })}
           </Stack>
         </Box>
       </Container>
@@ -168,6 +226,7 @@ function mapStateToProps(state) {
     currentImages: state.post.currentImages,
     posts: state.post.posts,
     filter: state.post.filter,
+    user: state.auth.user,
   }
 }
 
@@ -175,6 +234,7 @@ function mapDispatchToProps(dispatch) {
   return {
     fetchPost: value => dispatch(fetchPost(value)),
     fetchImages: value => dispatch(fetchImages(value)),
+    deletePost: value => dispatch(deletePost(value)),
   }
 }
 

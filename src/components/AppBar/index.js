@@ -6,7 +6,8 @@ import {connect} from 'react-redux'
 import Auth from '../Auth/Auth'
 
 import {signOutUser} from '../../services/firebase'
-import {Link, Navigate, useLocation, useNavigate} from 'react-router-dom'
+import {Link, matchPath, Navigate, useLocation, useNavigate} from 'react-router-dom'
+import HomeIcon from '@mui/icons-material/Home'
 
 function Appbar(props) {
   const [open, setOpen] = useState(false)
@@ -69,7 +70,9 @@ function Appbar(props) {
         <Toolbar>
           <Stack direction="row" alignItems="center" sx={{width: '100%'}}>
             <Typography variant="h6" component="div" sx={{mr: 'auto'}}>
-              TO-база
+              <Link aria-label="На главную" style={{color: 'inherit', textDecoration: 'none'}} to="/">
+                <HomeIcon />
+              </Link>
             </Typography>
 
             {props.user === null ? (
@@ -98,8 +101,19 @@ function Appbar(props) {
                 >
                   {location.pathname === '/' ? (
                     <MenuItem onClick={handleAddPostClick}>Добавить пост</MenuItem>
-                  ) : (
+                  ) : location.pathname === '/add' ? (
                     <MenuItem onClick={handleHomeClick}>На главную</MenuItem>
+                  ) : location.pathname.slice(0, location.pathname.lastIndexOf('/')) === '/edit' ? (
+                    <MenuItem onClick={handleHomeClick}>На главную</MenuItem>
+                  ) : (
+                    [
+                      <MenuItem key={1} onClick={handleHomeClick}>
+                        На главную
+                      </MenuItem>,
+                      <MenuItem key={2} onClick={handleAddPostClick}>
+                        Добавить пост
+                      </MenuItem>,
+                    ]
                   )}
 
                   <MenuItem onClick={handleSignOut}>

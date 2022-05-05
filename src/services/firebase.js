@@ -10,7 +10,17 @@ import {
 //import {getAnalytics} from 'firebase/analytics'
 import {getDatabase, ref as dbRef, onValue, set} from 'firebase/database'
 
-import {getDownloadURL, getStorage, listAll, ref as sRef, uploadBytes} from 'firebase/storage'
+import {
+  deleteObject,
+  getBlob,
+  getBytes,
+  getDownloadURL,
+  getMetadata,
+  getStorage,
+  listAll,
+  ref as sRef,
+  uploadBytes,
+} from 'firebase/storage'
 
 const ERROR_MESSAGES = {
   'email-already-in-use': 'Пользователь с таким Email уже существует',
@@ -77,20 +87,71 @@ export const getImages = id => {
   })
 }
 
-export const setImages = (id, files) => {
-  const promises = []
+export const getImageFiles = id => {
+  return new Promise((result, rej) => {
+    const promises = []
 
-  files.forEach(file => {
-    const promise = new Promise(res => {
-      uploadBytes(sRef(storage, `images/${id}/${file.name}`), file).then(snapshot => {
-        res()
+    listAll(sRef(storage, `images/${id}`)).then(res => {
+      res.items.forEach((itemRef, idx) => {
+        const p = new Promise(res1 => {
+          getBlob(itemRef).then(file => {
+            getMetadata(itemRef).then(data => {
+              res1([file, data.name])
+            })
+          })
+        })
+
+        promises.push(p)
       })
+
+      Promise.all(promises).then(values => result(values))
     })
-
-    promises.push(promise)
   })
+}
 
-  return Promise.all(promises)
+export const delelteImages = id => {
+  return new Promise((result, rej) => {
+    const promises = []
+
+    listAll(sRef(storage, `images/${id}`))
+      .then(res => {
+        if (res.items.length > 0) {
+          res.items.forEach((itemRef, idx) => {
+            const p = new Promise(res1 => {
+              deleteObject(itemRef).then(() => {
+                res1()
+              })
+            })
+            promises.push(p)
+          })
+
+          Promise.all(promises).then(() => result())
+        } else {
+          result()
+        }
+      })
+      .catch(e => console.log(e))
+  })
+}
+
+export const setImages = (id, files) => {
+  return new Promise((result, rej) => {
+    delelteImages(id).then(() => {
+      const promises = []
+
+      files.forEach((file, idx) => {
+        const promise = new Promise(res => {
+          uploadBytes(sRef(storage, `images/${id}/${idx + 1}`), file).then(snapshot => {
+            res()
+          })
+        })
+
+        promises.push(promise)
+      })
+
+      Promise.all(promises).then(() => result())
+    })
+  })
 }
 
 export const createUser = (email, password) => {

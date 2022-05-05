@@ -1,4 +1,4 @@
-import {Container, TextField, InputAdornment, Stack} from '@mui/material'
+import {Container, TextField, InputAdornment, Stack, Typography} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import {connect} from 'react-redux'
 import {useState} from 'react'
@@ -59,6 +59,12 @@ function PostSerch(props) {
 
   return (
     <Container sx={{py: '30px'}}>
+      <Typography variant="h3" sx={{textAlign: 'center', mb: 1}}>
+        База знаний ТО
+      </Typography>
+      <Typography variant="h6" sx={{textAlign: 'center', mb: 3}}>
+        Выполнена в виде постов, которые можно найти по ключевым словам (тегам)
+      </Typography>
       <TextField
         fullWidth
         id="outlined-basic"

@@ -1,12 +1,21 @@
 import $ from 'jquery'
 import {Box, Button, Card, CardContent, Container, Stack, TextField, Typography, CircularProgress} from '@mui/material'
-import {cloneElement, useRef, useState} from 'react'
+import {cloneElement, useEffect, useRef, useState} from 'react'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
-import {setPost} from '../../services/firebase'
+import {delelteImages, setPost} from '../../services/firebase'
 import {connect} from 'react-redux'
-import {addPost} from '../../redux/actions/post'
+import {
+  addPost,
+  fetchImageFiles,
+  fetchImages,
+  replacePost,
+  setCurrentImageFiles,
+  setCurrentImages,
+} from '../../redux/actions/post'
 import {setImages} from '../../services/firebase'
-import {useNavigate} from 'react-router-dom'
+import {useNavigate, useParams} from 'react-router-dom'
+import {set} from 'firebase/database'
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace'
 
 const findId = arr => {
   console.log('####arrr ', arr)
@@ -14,6 +23,8 @@ const findId = arr => {
 
   return arr.findIndex(item => item.id === idx) === -1 ? idx : findId(arr)
 }
+
+let currentPost = {}
 
 function AddPost(props) {
   const [allFiles, setAllFiles] = useState([])
@@ -25,8 +36,10 @@ function AddPost(props) {
   const [textErr, setTextErr] = useState(false)
   const [tagsErr, setTagsErr] = useState(false)
   const [isUploading, setUploading] = useState(false)
+  const [fileNames, setFileNames] = useState([])
 
   const navigate = useNavigate()
+  const params = useParams()
 
   function readmultifiles(e) {
     const files = e.target.files
@@ -113,125 +126,213 @@ function AddPost(props) {
 
     if (isTitleValid && isTextValid && isTagsValid) {
       setUploading(true)
-      const newId = findId(props.posts)
 
-      const newPost = {
-        id: newId,
-        title: titleVal,
-        text: textVal,
-        tags: tagsVal.split(' '),
+      let updatedPost = {}
+      let newPost = {}
+      let newPosts = []
+      let newId = null
+
+      if (params.postId) {
+        updatedPost = {
+          id: parseInt(params.postId, 10),
+          title: titleVal,
+          text: textVal,
+          tags: tagsVal.split(' '),
+        }
+
+        newPosts = props.posts.map(post => {
+          return post.id === updatedPost.id ? updatedPost : post
+        })
+      } else {
+        newId = findId(props.posts)
+
+        newPost = {
+          id: newId,
+          title: titleVal,
+          text: textVal,
+          tags: tagsVal.split(' '),
+        }
+
+        newPosts = [...props.posts, newPost]
       }
-
-      const newPosts = [...props.posts, newPost]
 
       setPost(newPosts)
         .then(() => {
-          props.addPost(newPost)
+          !params.postId ? props.addPost(newPost) : props.replacePost(updatedPost)
+          const id = parseInt(params.postId, 10) ? parseInt(params.postId, 10) : newId
 
-          console.log('data written to database')
-
-          if (allFiles.length > 0) {
-            setImages(newId, allFiles).then(() => {
-              navigate(`/${newId}`)
-            })
-          } else {
-            navigate(`/${newId}`)
-          }
+          setImages(id, allFiles).then(() => {
+            navigate(`/${id}`)
+          })
         })
         .catch(e => console.log(e))
     }
   }
 
+  useEffect(() => {
+    if (params.postId) {
+      currentPost = props.posts.find(post => post.id === parseInt(params.postId, 10))
+      setTitleVal(currentPost.title)
+      setTextVal(currentPost.text)
+      setTagsVal(currentPost.tags.join(' '))
+
+      props.fetchImages(parseInt(params.postId, 10))
+      props.fetchImageFiles(parseInt(params.postId, 10))
+    } else {
+      props.setCurrentImages(null)
+      props.setCurrentImageFiles(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    !!props.currentImages ? setImgSrc(props.currentImages) : setImgSrc([])
+  }, [props.currentImages])
+
+  useEffect(() => {
+    if (props.currentImageFiles && props.currentImageFiles.length > 0) {
+      const files = props.currentImageFiles.map(file => {
+        return file[0]
+      })
+
+      const names = props.currentImageFiles.map(file => {
+        return file[1]
+      })
+
+      setAllFiles(files)
+      setFileNames(names)
+    } else {
+      setAllFiles([])
+    }
+  }, [props.currentImageFiles])
+
   return (
     <Container sx={{py: 4}}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Добавить новый пост
-      </Typography>
-      <TextField
-        error={titleErr}
-        fullWidth
-        required
-        id="name"
-        label="Название"
-        margin="normal"
-        helperText={titleErr ? 'Поле не может быть пустым' : ''}
-        onChange={onTitleInput}
-      />
-      <TextField
-        error={textErr}
-        fullWidth
-        required
-        id="text"
-        label="Текст"
-        margin="normal"
-        multiline
-        minRows={5}
-        helperText={textErr ? 'Поле не может быть пустым' : ''}
-        onChange={onTextInput}
-      />
-      <TextField
-        error={tagsErr}
-        fullWidth
-        required
-        id="outlined-required"
-        label="Ключевые слова (через пробел)"
-        margin="normal"
-        multiline
-        minRows={1}
-        sx={{mb: 3}}
-        helperText={tagsErr ? 'Введите хотя бы одно слово' : ''}
-        onChange={onTagsInput}
-      />
-      <Box sx={{p: 2, mb: 3}} style={{border: '1px dashed #bbbbbb', borderRadius: '5px', backgroundColor: '#f7f7f7'}}>
-        <Button
-          variant="outlined"
-          component="label"
-          sx={{py: 3}}
-          style={{display: 'block', textAlign: 'center', backgroundColor: '#ffffff'}}
-        >
-          Загрузить изабражения
-          <input type="file" hidden onChange={readmultifiles} multiple />
-        </Button>
+      {props.user === null ? (
+        <p>Для доступа к этой странице нужно авторизоваться</p>
+      ) : (
+        <>
+          <Typography variant="h5" align="center" gutterBottom>
+            {!!params.postId && (
+              <Box sx={{textAlign: 'left'}}>
+                <Button
+                  size="large"
+                  onClick={() => {
+                    navigate(`/${params.postId}`)
+                  }}
+                  sx={{mr: 'auto'}}
+                >
+                  <KeyboardBackspaceIcon />
+                  <Typography variant="h6" sx={{px: 2}}>
+                    Назад
+                  </Typography>
+                </Button>
+              </Box>
+            )}
+            {params.postId ? 'Редактировать пост' : 'Добавить новый пост'}
+          </Typography>
+          <TextField
+            error={titleErr}
+            fullWidth
+            required
+            id="name"
+            label="Название"
+            margin="normal"
+            value={titleVal}
+            helperText={titleErr ? 'Поле не может быть пустым' : ''}
+            onChange={onTitleInput}
+          />
+          <Typography sx={{mt: 3}}>
+            Чтобы текст в посте отображался жирным начертанием, заключите его между символами "*"
+            <br />
+            Пример:
+            <br />
+            Это *выделенный* текст
+            <br />
+            Это <b>выделенный</b> текст
+          </Typography>
+          <TextField
+            error={textErr}
+            fullWidth
+            required
+            id="text"
+            label="Текст"
+            margin="normal"
+            multiline
+            minRows={5}
+            value={textVal}
+            helperText={textErr ? 'Поле не может быть пустым' : ''}
+            onChange={onTextInput}
+            sx={{mt: 1}}
+          />
+          <TextField
+            error={tagsErr}
+            fullWidth
+            required
+            id="outlined-required"
+            label="Ключевые слова (через пробел)"
+            margin="normal"
+            multiline
+            minRows={1}
+            sx={{mb: 3}}
+            value={tagsVal}
+            helperText={tagsErr ? 'Введите хотя бы одно слово' : ''}
+            onChange={onTagsInput}
+          />
+          <Box
+            sx={{p: 2, mb: 3}}
+            style={{border: '1px dashed #bbbbbb', borderRadius: '5px', backgroundColor: '#f7f7f7'}}
+          >
+            <Button
+              variant="outlined"
+              component="label"
+              sx={{py: 3}}
+              style={{display: 'block', textAlign: 'center', backgroundColor: '#ffffff'}}
+            >
+              Загрузить изабражения
+              <input type="file" hidden onChange={readmultifiles} multiple />
+            </Button>
 
-        <Stack gap={2}>
-          {imgSrc.map((img, idx) => {
-            return (
-              <Card key={idx} sx={{mt: idx > 0 ? 0 : 2}} style={{backgroundColor: '#ffffff'}}>
-                <CardContent>
-                  <Stack direction="row" alignItems="center" gap={2}>
-                    <Stack
-                      justifyContent="center"
-                      alignItems="center"
-                      sx={{width: '100px', height: '60px'}}
-                      style={{flexShrink: 0}}
-                    >
-                      <img style={{maxWidth: '100%', maxHeight: '100%'}} src={img} />
-                    </Stack>
-                    <Typography
-                      variant="body1"
-                      style={{overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}
-                    >
-                      {allFiles[idx].name}
-                    </Typography>
-                    <Button style={{marginLeft: 'auto'}} onClick={onDelete(idx)}>
-                      <DeleteForeverIcon />
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </Stack>
-      </Box>
+            <Stack gap={2}>
+              {imgSrc.map((img, idx) => {
+                return (
+                  <Card key={idx} sx={{mt: idx > 0 ? 0 : 2}} style={{backgroundColor: '#ffffff'}}>
+                    <CardContent>
+                      <Stack direction="row" alignItems="center" gap={2}>
+                        <Stack
+                          justifyContent="center"
+                          alignItems="center"
+                          sx={{width: '100px', height: '60px'}}
+                          style={{flexShrink: 0}}
+                        >
+                          <img style={{maxWidth: '100%', maxHeight: '100%'}} src={img} />
+                        </Stack>
+                        <Typography
+                          variant="body1"
+                          style={{overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}
+                        >
+                          {!!allFiles[idx] && !!allFiles[idx].name ? allFiles[idx].name : fileNames[idx]}
+                        </Typography>
+                        <Button style={{marginLeft: 'auto'}} onClick={onDelete(idx)}>
+                          <DeleteForeverIcon />
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </Stack>
+          </Box>
 
-      <Button
-        variant="contained"
-        sx={{py: 3, mb: 3}}
-        style={{display: 'block', textAlign: 'center', width: '100%'}}
-        onClick={submitHandler}
-      >
-        {isUploading ? <CircularProgress style={{color: '#fff'}} /> : <span>Отправить</span>}
-      </Button>
+          <Button
+            variant="contained"
+            sx={{py: 3, mb: 3}}
+            style={{display: 'block', textAlign: 'center', width: '100%'}}
+            onClick={submitHandler}
+          >
+            {isUploading ? <CircularProgress style={{color: '#fff'}} /> : <span>Отправить</span>}
+          </Button>
+        </>
+      )}
     </Container>
   )
 }
@@ -239,12 +340,20 @@ function AddPost(props) {
 function mapStateToProps(state) {
   return {
     posts: state.post.posts,
+    currentImages: state.post.currentImages,
+    currentImageFiles: state.post.currentImageFiles,
+    user: state.auth.user,
   }
 }
 
 function mapDispatchToProps(dispatch) {
   return {
     addPost: value => dispatch(addPost(value)),
+    replacePost: value => dispatch(replacePost(value)),
+    fetchImages: value => dispatch(fetchImages(value)),
+    fetchImageFiles: value => dispatch(fetchImageFiles(value)),
+    setCurrentImages: value => dispatch(setCurrentImages(value)),
+    setCurrentImageFiles: value => dispatch(setCurrentImageFiles(value)),
   }
 }
 
