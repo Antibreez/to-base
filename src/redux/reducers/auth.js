@@ -1,9 +1,10 @@
 //import {SIGN_UP} from '../actions/actionTypes'
 
-import {SIGN_IN} from '../actions/actionTypes'
+import {SET_USER_STATUS, SIGN_IN} from '../actions/actionTypes'
 
 const initialState = {
   user: null,
+  isAdmin: false,
 }
 
 export default function auth(state = initialState, action) {
@@ -12,6 +13,11 @@ export default function auth(state = initialState, action) {
       return {
         ...state,
         user: action.payload,
+      }
+    case SET_USER_STATUS:
+      return {
+        ...state,
+        isAdmin: action.payload,
       }
     // case SIGN_UP:
     //   return {

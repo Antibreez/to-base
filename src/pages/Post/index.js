@@ -31,6 +31,7 @@ function Post(props) {
   const [currentPost, setCurrentPost] = useState(null)
   let params = useParams()
   let [searchParams, setSearchParams] = useSearchParams()
+  const [postLoaded, setPostLoaded] = useState(null)
   let navigate = useNavigate()
 
   const {posts, filter} = props
@@ -57,7 +58,7 @@ function Post(props) {
 
   useEffect(() => {
     setCurrentPost(getPost(posts, params.postId))
-    props.fetchImages(parseInt(params.postId, 10))
+    props.fetchImages(parseInt(params.postId, 10)).then(() => setPostLoaded(true))
   }, [])
 
   function onTagClick(e) {
@@ -79,87 +80,112 @@ function Post(props) {
 
   return (
     <>
-      <Container maxWidth="lg" sx={{py: 3, mb: 4}}>
-        <Stack direction="row" sx={{py: 1, px: 2}} style={{backgroundColor: '#efefef'}}>
-          <Button size="large" onClick={goBackHandler} sx={{mr: 'auto'}}>
-            <KeyboardBackspaceIcon />
-            <Typography variant="h6" sx={{px: 2}}>
-              к поиску
-            </Typography>
-          </Button>
-          {props.user ? (
-            <>
-              <Button aria-label="Редактировать" onClick={() => navigate(`/edit/${params.postId}`)}>
-                <EditIcon />
-              </Button>
-              <Button aria-label="Удалить" onClick={handleClickOpen}>
-                <DeleteIcon />
-              </Button>
-              <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Вы уверены, что хотите удалить пост?</DialogTitle>
-                <DialogActions style={{justifyContent: 'center'}}>
-                  <Button onClick={handleDelete} style={{color: '#aaa'}}>
-                    Да
-                  </Button>
-                  <Button onClick={handleClose}>Нет</Button>
-                </DialogActions>
-              </Dialog>
-            </>
-          ) : null}
-        </Stack>
-      </Container>
-
-      <Container maxWidth="xl">
-        {!props.currentImages ? (
-          <Stack direction="row" justifyContent="center" sx={{p: 5}}>
-            <CircularProgress />
-          </Stack>
-        ) : props.currentImages.length > 0 ? (
-          <>
-            <Swiper modules={[Navigation, Pagination]} navigation pagination={{clickable: true}}>
-              {props.currentImages.map((image, idx) => {
-                return (
-                  <SwiperSlide
-                    key={idx + 1}
-                    style={{
-                      height: 'auto',
-                      maxHeight: '100vh',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingBottom: '50px',
-                    }}
-                  >
-                    <img src={image} style={{maxWidth: '100%', maxHeight: '100%'}} />
-                  </SwiperSlide>
-                )
-              })}
-            </Swiper>
-          </>
-        ) : null}
-      </Container>
-
-      <Container maxWidth="md" style={{paddingTop: '30px', paddingBottom: '50px'}}>
-        <Typography style={{fontWeight: 500}} variant="h5" sx={{mb: 4}}>
-          {!!currentPost && currentPost.title}
-        </Typography>
-        <Typography variant="body2" gutterBottom sx={{mb: 3}} style={{whiteSpace: 'pre-line'}}>
-          {!!currentPost &&
-            currentPost.text.split('*').map((t, idx) => {
-              return <Fragment key={idx}>{idx % 2 !== 0 ? <b>{t}</b> : t}</Fragment>
-            })}
-        </Typography>
-        <Box sx={{backgroundColor: '#efefef', p: '20px'}}>
-          <Stack direction="row" flexWrap="wrap">
-            {!!currentPost &&
-              currentPost.tags.map((item, idx) => {
-                return (
-                  <Chip key={idx + 1} label={item} variant="outlined" sx={{mb: 1, mr: 1}} onClick={onTagClick}></Chip>
-                )
-              })}
-          </Stack>
+      {!postLoaded ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <CircularProgress />
         </Box>
-      </Container>
+      ) : (
+        <>
+          <Container maxWidth="lg" sx={{py: 3, mb: 4}}>
+            <Stack direction="row" sx={{py: 1, px: 2}} style={{backgroundColor: '#efefef'}}>
+              <Button size="large" onClick={goBackHandler} sx={{mr: 'auto'}}>
+                <KeyboardBackspaceIcon />
+                <Typography variant="h6" sx={{px: 2}}>
+                  к поиску
+                </Typography>
+              </Button>
+              {props.user && props.isAdmin ? (
+                <>
+                  <Button aria-label="Редактировать" onClick={() => navigate(`/edit/${params.postId}`)}>
+                    <EditIcon />
+                  </Button>
+                  <Button aria-label="Удалить" onClick={handleClickOpen}>
+                    <DeleteIcon />
+                  </Button>
+                  <Dialog open={open} onClose={handleClose}>
+                    <DialogTitle>Вы уверены, что хотите удалить пост?</DialogTitle>
+                    <DialogActions style={{justifyContent: 'center'}}>
+                      <Button onClick={handleDelete} style={{color: '#aaa'}}>
+                        Да
+                      </Button>
+                      <Button onClick={handleClose}>Нет</Button>
+                    </DialogActions>
+                  </Dialog>
+                </>
+              ) : null}
+            </Stack>
+          </Container>
+
+          <Container maxWidth="xl">
+            {!props.currentImages ? (
+              <Stack direction="row" justifyContent="center" sx={{p: 5}}>
+                <CircularProgress />
+              </Stack>
+            ) : props.currentImages.length > 0 ? (
+              <>
+                <Swiper modules={[Navigation, Pagination]} navigation pagination={{clickable: true}}>
+                  {props.currentImages.map((image, idx) => {
+                    return (
+                      <SwiperSlide
+                        key={idx + 1}
+                        style={{
+                          height: 'auto',
+                          maxHeight: '100vh',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          paddingBottom: '50px',
+                        }}
+                      >
+                        <img src={image} style={{maxWidth: '100%', maxHeight: '100%'}} />
+                      </SwiperSlide>
+                    )
+                  })}
+                </Swiper>
+              </>
+            ) : null}
+          </Container>
+
+          <Container maxWidth="md" style={{paddingTop: '30px', paddingBottom: '50px'}}>
+            <Typography style={{fontWeight: 500}} variant="h5" sx={{mb: 4}}>
+              {!!currentPost && currentPost.title}
+            </Typography>
+            <Typography variant="body2" gutterBottom sx={{mb: 3}} style={{whiteSpace: 'pre-line'}}>
+              {!!currentPost &&
+                currentPost.text.split('*').map((t, idx) => {
+                  return <Fragment key={idx}>{idx % 2 !== 0 ? <b>{t}</b> : t}</Fragment>
+                })}
+            </Typography>
+            <Box sx={{backgroundColor: '#efefef', p: '20px'}}>
+              <Stack direction="row" flexWrap="wrap">
+                {!!currentPost &&
+                  currentPost.tags.map((item, idx) => {
+                    return (
+                      <Chip
+                        key={idx + 1}
+                        label={item}
+                        variant="outlined"
+                        sx={{mb: 1, mr: 1}}
+                        onClick={onTagClick}
+                      ></Chip>
+                    )
+                  })}
+              </Stack>
+            </Box>
+          </Container>
+        </>
+      )}
     </>
   )
 }
@@ -227,6 +253,7 @@ function mapStateToProps(state) {
     posts: state.post.posts,
     filter: state.post.filter,
     user: state.auth.user,
+    isAdmin: state.auth.isAdmin,
   }
 }
 

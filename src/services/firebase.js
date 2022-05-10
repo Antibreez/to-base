@@ -66,6 +66,18 @@ export const setPost = data => {
   return set(dbRef(db, `/posts`), data)
 }
 
+export const setUserData = (id, data) => {
+  return set(dbRef(db, `/users/${id}`), data)
+}
+
+export const getUserStatus = id => {
+  return new Promise((res, rej) => {
+    onValue(dbRef(db, `/users/${id}`), snapshot => {
+      res(snapshot.val())
+    })
+  })
+}
+
 export const getImages = id => {
   return new Promise((result, rej) => {
     let imagesUrl

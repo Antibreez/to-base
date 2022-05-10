@@ -62,11 +62,14 @@ export const deletePost = id => {
 }
 
 export const fetchImages = id => async dispatch => {
-  getImages(id)
-    .then(images => {
-      dispatch(setCurrentImages(images))
-    })
-    .catch(e => setCurrentImages([]))
+  return new Promise(res => {
+    getImages(id)
+      .then(images => {
+        dispatch(setCurrentImages(images))
+        res()
+      })
+      .catch(e => setCurrentImages([]))
+  })
 }
 
 export const fetchImageFiles = id => async dispatch => {

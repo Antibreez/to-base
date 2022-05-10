@@ -1,5 +1,5 @@
 //import {signInUser} from '../../services/firebase'
-import {SIGN_IN} from './actionTypes'
+import {SET_USER_STATUS, SIGN_IN} from './actionTypes'
 //import {SIGN_UP} from './actionTypes'
 
 // export const signIn = (email, password) => async dispatch => {
@@ -21,6 +21,13 @@ import {SIGN_IN} from './actionTypes'
 export const setUser = value => {
   return {
     type: SIGN_IN,
+    payload: value,
+  }
+}
+
+export const setUserStatus = value => {
+  return {
+    type: SET_USER_STATUS,
     payload: value,
   }
 }

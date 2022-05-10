@@ -137,7 +137,7 @@ function AddPost(props) {
           id: parseInt(params.postId, 10),
           title: titleVal,
           text: textVal,
-          tags: tagsVal.split(' '),
+          tags: tagsVal.toLowerCase().split(' '),
         }
 
         newPosts = props.posts.map(post => {
@@ -150,7 +150,7 @@ function AddPost(props) {
           id: newId,
           title: titleVal,
           text: textVal,
-          tags: tagsVal.split(' '),
+          tags: tagsVal.toLowerCase().split(' '),
         }
 
         newPosts = [...props.posts, newPost]

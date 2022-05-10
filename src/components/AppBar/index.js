@@ -69,11 +69,13 @@ function Appbar(props) {
       <Container maxWidth="xl" sx={{p: {xs: 0}}}>
         <Toolbar>
           <Stack direction="row" alignItems="center" sx={{width: '100%'}}>
-            <Typography variant="h6" component="div" sx={{mr: 'auto'}}>
-              <Link aria-label="На главную" style={{color: 'inherit', textDecoration: 'none'}} to="/">
-                <HomeIcon />
-              </Link>
-            </Typography>
+            <Link
+              aria-label="На главную"
+              style={{color: 'inherit', textDecoration: 'none', marginRight: 'auto', fontSize: 0}}
+              to="/"
+            >
+              <HomeIcon />
+            </Link>
 
             {props.user === null ? (
               <Button color="inherit" onClick={handleClickOpen}>
@@ -100,7 +102,13 @@ function Appbar(props) {
                   MenuListProps={{'aria-labelledby': 'menu-button'}}
                 >
                   {location.pathname === '/' ? (
-                    <MenuItem onClick={handleAddPostClick}>Добавить пост</MenuItem>
+                    [
+                      props.isAdmin ? (
+                        <MenuItem key={1} onClick={handleAddPostClick}>
+                          Добавить пост
+                        </MenuItem>
+                      ) : null,
+                    ]
                   ) : location.pathname === '/add' ? (
                     <MenuItem onClick={handleHomeClick}>На главную</MenuItem>
                   ) : location.pathname.slice(0, location.pathname.lastIndexOf('/')) === '/edit' ? (
@@ -110,9 +118,11 @@ function Appbar(props) {
                       <MenuItem key={1} onClick={handleHomeClick}>
                         На главную
                       </MenuItem>,
-                      <MenuItem key={2} onClick={handleAddPostClick}>
-                        Добавить пост
-                      </MenuItem>,
+                      props.isAdmin ? (
+                        <MenuItem key={2} onClick={handleAddPostClick}>
+                          Добавить пост
+                        </MenuItem>
+                      ) : null,
                     ]
                   )}
 
@@ -143,6 +153,7 @@ function Appbar(props) {
 function mapStateToProps(state) {
   return {
     user: state.auth.user,
+    isAdmin: state.auth.isAdmin,
   }
 }
 

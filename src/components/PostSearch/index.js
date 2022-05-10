@@ -59,11 +59,11 @@ function PostSerch(props) {
 
   return (
     <Container sx={{py: '30px'}}>
-      <Typography variant="h3" sx={{textAlign: 'center', mb: 1}}>
+      <Typography variant="h3" sx={{textAlign: 'center', mb: 1, fontSize: {xs: '2rem', sm: '3rem'}}}>
         База знаний ТО
       </Typography>
-      <Typography variant="h6" sx={{textAlign: 'center', mb: 3}}>
-        Выполнена в виде постов, которые можно найти по ключевым словам (тегам)
+      <Typography variant="body1" sx={{textAlign: 'center', mb: 3}}>
+        База выполнена в виде постов, которые можно найти по ключевым словам (тегам)
       </Typography>
       <TextField
         fullWidth

@@ -22,7 +22,14 @@ import {useState} from 'react'
 import {setUser} from '../../redux/actions/auth'
 import {connect} from 'react-redux'
 
-import {getErrorMessage, createUser, signInUser, signOutUser, sendConfirmEmail} from '../../services/firebase'
+import {
+  getErrorMessage,
+  createUser,
+  signInUser,
+  signOutUser,
+  sendConfirmEmail,
+  setUserData,
+} from '../../services/firebase'
 import {createTheme} from '@mui/system'
 import {ThemeProvider} from '@emotion/react'
 
@@ -150,8 +157,8 @@ function Auth(props) {
     if (isEmailValid && isPasswordRegValid && isPasswordRegAgainValid) {
       setErrorMessage('')
       createUser(email, regPassword)
-        .then(() => {
-          console.log('signed up')
+        .then(user => {
+          setUserData(user.user.uid, {isAdmin: false})
 
           sendConfirmEmail().then(() => {
             signOutUser().then(() => {
