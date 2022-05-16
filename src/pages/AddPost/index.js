@@ -207,8 +207,8 @@ function AddPost(props) {
 
   return (
     <Container sx={{py: 4}}>
-      {props.user === null ? (
-        <p>Для доступа к этой странице нужно авторизоваться</p>
+      {props.isAdmin === false ? (
+        <p>Для доступа к этой странице нужно иметь права администратора</p>
       ) : (
         <>
           <Typography variant="h5" align="center" gutterBottom>
@@ -343,6 +343,7 @@ function mapStateToProps(state) {
     currentImages: state.post.currentImages,
     currentImageFiles: state.post.currentImageFiles,
     user: state.auth.user,
+    isAdmin: state.auth.isAdmin,
   }
 }
 
